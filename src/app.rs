@@ -1,63 +1,108 @@
+use std::rc::Rc;
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
+use rand::random;
+use rand::seq::IndexedRandom;
+use crate::knot::{Knot, Knots};
+
+const KNOTS: &str = include_str!("knots.toml");
 
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context(cx);
 
+    let knots: Knots = toml::from_str(KNOTS).unwrap();
+    let knots2 = knots.clone();
+
     view! { cx,
         // injects a stylesheet into the document <head>
         // id=leptos means cargo-leptos will hot-reload this stylesheet
-        <Stylesheet id="leptos" href="/pkg/leptos_start.css"/>
+        <Stylesheet id="leptos" href="/pkg/neckties.css"/>
 
         // sets the document title
-        <Title text="Welcome to Leptos"/>
+        <Title text="Neckties!"/>
 
         // content for this welcome page
         <Router>
             <main>
                 <Routes>
-                    <Route path="" view=HomePage/>
-                    <Route path="/*any" view=NotFound/>
+                    <Route
+                        path=""
+                        view=move |cx| view!{ cx, <KnotList knots={knots.clone()} /> }
+                    />
+                    <Route
+                        path="/:slug"
+                        view=move |cx| view!{ cx, <Knot knots={knots2.clone()} /> }
+                    />
                 </Routes>
             </main>
         </Router>
     }
 }
 
-/// Renders the home page of your application.
+/// A list of knots
 #[component]
-fn HomePage(cx: Scope) -> impl IntoView {
-    // Creates a reactive value to update the button
-    let (count, set_count) = create_signal(cx, 0);
-    let on_click = move |_| set_count.update(|count| *count += 1);
+fn KnotList(cx: Scope, knots: Knots) -> impl IntoView {
+    let mut rng = rand::thread_rng();
+    let random = knots.knots.choose(&mut rng).unwrap();
 
     view! { cx,
-        <h1>"Welcome to Leptos!"</h1>
-        <button on:click=on_click>"Click Me: " {count}</button>
+        <h1>"Neckties!"</h1>
+        <ul>
+            <li>
+                <a href={format!("/{}", &random.slug())}>Random</a>
+            </li>
+            {
+                knots.knots.iter()
+                    .map(|knot| view!{cx,
+                        <li>
+                            <a href={format!("/{}", &knot.slug())}>{&knot.name}</a>
+                        </li>
+                    })
+                    .collect_view(cx)
+            }
+        </ul>
     }
 }
 
 /// 404 - Not Found
 #[component]
 fn NotFound(cx: Scope) -> impl IntoView {
-    // set an HTTP status code 404
-    // this is feature gated because it can only be done during
-    // initial server-side rendering
-    // if you navigate to the 404 page subsequently, the status
-    // code will not be set because there is not a new HTTP request
-    // to the server
-    #[cfg(feature = "ssr")]
-    {
-        // this can be done inline because it's synchronous
-        // if it were async, we'd use a server function
-        let resp = expect_context::<leptos_actix::ResponseOptions>(cx);
-        resp.set_status(actix_web::http::StatusCode::NOT_FOUND);
-    }
-
     view! { cx,
-        <h1>"Not Found"</h1>
+        <h1>"No such necktie for you"</h1>
     }
 }
+
+#[derive(Params, PartialEq, Eq)]
+struct KnotParams {
+    pub slug: String,
+}
+
+/// A knot
+#[component]
+fn Knot(cx: Scope, knots: Knots) -> impl IntoView {
+    let slug = use_params::<KnotParams>(cx).with(|params| params.as_ref()
+        .map(|params| params.slug.clone())
+        .unwrap_or_default()
+    );
+    let knot = knots.knots.into_iter().find(|knot| knot.slug() == slug);
+
+    view! { cx,
+        {
+            move || if let Some(knot) = &knot {
+                view! { cx,
+                    <h1>{knot.name.clone()}</h1>
+                     <iframe width="1080" height="720" src={format!("https://www.youtube.com/embed/{}", knot.youtube.clone())}>
+
+                    </iframe>
+
+                }.into_view(cx)
+            } else {
+                view! { cx, <NotFound /> }.into_view(cx)
+            }
+        }
+    }
+}
+
