@@ -9,13 +9,15 @@ target = "wasm32-unknown-unknown"
 [dependencies]
 console_error_panic_hook = "0.1.7"
 cfg-if = "1.0.0"
-leptos = { version = "0.4.10", features = ["nightly", "csr"] }
-leptos_meta = { version = "0.4.10", features = ["nightly", "csr"] }
-leptos_router = { version = "0.4.10", features = ["nightly", "csr"] }
-serde = { version = "1.0.188", features = ["derive"] }
-toml = "0.7.8"
-wasm-bindgen = "=0.2.87"
+leptos = { version = "0.6.6", features = ["nightly", "csr"] }
+leptos_meta = { version = "0.6.6", features = ["nightly", "csr"] }
+leptos_router = { version = "0.6.6", features = ["nightly", "csr"] }
+serde = { version = "1.0.197", features = ["derive"] }
+toml = "0.8.10"
+wasm-bindgen = "=0.2.91"
 rand = "0.9.0-alpha.0"
+leptos_icons = "0.3.0"
+icondata = "0.3.0"
 
 # Defines a size-optimized profile for the WASM bundle in release mode
 [profile.wasm-release]
